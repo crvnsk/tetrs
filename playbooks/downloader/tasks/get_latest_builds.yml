@@ -10,23 +10,25 @@
         method: GET
         return_content: true
         validate_certs: false
-        status_code: 
+        status_code: 200
         url_username: "cyberprotect"
         url_password: "cyberprotect"
       register: cf_page
+      ignore_errors: yes
 
     - name: "Найти последнюю версию CF"
       ansible.builtin.shell: |
         set -o pipefail
-         Ищем каталоги с версиями (release_AF-../, develop/, и т.д.)
+        # Ищем каталоги с версиями (release_AF-../, develop/, и т.д.)
         echo "{{ cf_page.content }}" | \
         grep -oE '[a-zA-Z_]+-[-]+\.[-]+\.[-]+/' | \
         sort -V | \
-        tail -
+        tail -1
       args:
         executable: /bin/bash
       register: cf_version_dir
       changed_when: false
+      when: cf_page.failed == false
 
     - name: "Получить список билдов для версии CF"
       ansible.builtin.uri:
@@ -34,30 +36,31 @@
         method: GET
         return_content: true
         validate_certs: false
-        status_code: 
+        status_code: 200
         url_username: "cyberprotect"
         url_password: "cyberprotect"
       register: cf_builds_page
-      when: cf_version_dir.stdout != ""
+      when: cf_version_dir.stdout != "" and cf_version_dir.stdout | trim != ""
+      ignore_errors: yes
 
     - name: "Извлечь последний билд CF"
       ansible.builtin.shell: |
         set -o pipefail
-         Ищем билды в формате ..x
+        # Ищем билды в формате ..x
         echo "{{ cf_builds_page.content }}" | \
         grep -oE '[-]+\.[-]+\.[-]+x[-]+' | \
         sort -V | \
-        tail -
+        tail -1
       args:
         executable: /bin/bash
       register: cf_build_result
       changed_when: false
-      when: cf_version_dir.stdout != ""
+      when: cf_builds_page.failed == false and cf_version_dir.stdout != "" and cf_version_dir.stdout | trim != ""
 
     - name: "Сформировать полный путь CF"
       ansible.builtin.set_fact:
         cf_build: "{{ cf_version_dir.stdout | trim }}{{ cf_build_result.stdout | trim }}"
-      when: cf_version_dir.stdout != "" and cf_build_result.stdout != ""
+      when: cf_version_dir.stdout != "" and cf_build_result.stdout != "" and cf_build_result.stdout | trim != ""
 
     - name: "Проверить, что билд CF найден"
       ansible.builtin.assert:
@@ -65,6 +68,7 @@
           - cf_build != ""
           - cf_build is defined
         fail_msg: "Не удалось определить билд для CF Server"
+      when: cf_build == ""
 
 #Получение последнего билда GW (если gw_build не передан)
 - name: "Получить последний билд GW (если не задан)"
@@ -76,24 +80,26 @@
         method: GET
         return_content: true
         validate_certs: false
-        status_code: 
+        status_code: 200
         url_username: "cyberprotect"
         url_password: "cyberprotect"
       register: gw_page
+      ignore_errors: yes
 
     - name: "Извлечь последний билд GW"
       ansible.builtin.shell: |
         set -o pipefail
-         Ищем каталоги с номерами билдов
+        # Ищем каталоги с номерами билдов
         echo "{{ gw_page.content }}" | \
         grep -oE '[-]+/' | \
         grep -oE '^[-]+' | \
         sort -n | \
-        tail -
+        tail -1
       args:
         executable: /bin/bash
       register: gw_build_result
       changed_when: false
+      when: gw_page.failed == false
 
     - name: "Установить номер сборки GW"
       ansible.builtin.set_fact:
@@ -105,3 +111,4 @@
           - gw_build != ""
           - gw_build is defined
         fail_msg: "Не удалось извлечь номер сборки для GW"
+      when: gw_build == ""
