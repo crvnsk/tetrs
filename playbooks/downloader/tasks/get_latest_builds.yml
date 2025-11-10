@@ -19,9 +19,11 @@
     - name: "Найти последнюю версию CF"
       ansible.builtin.shell: |
         set -o pipefail
-        # Ищем каталоги с версиями (release_AF-../, develop/, и т.д.)
+        # Универсальный поиск каталогов в HTML
         echo "{{ cf_page.content }}" | \
-        grep -oE '[a-zA-Z_]+-[-]+\.[-]+\.[-]+/' | \
+        grep -oE 'href="[^"]*/"' | \
+        sed 's/href="//g; s/"//g; s/\/$//' | \
+        grep -vE '^(\.\.|/builds/|/)$' | \
         sort -V | \
         tail -1
       args:
@@ -46,9 +48,11 @@
     - name: "Извлечь последний билд CF"
       ansible.builtin.shell: |
         set -o pipefail
-        # Ищем билды в формате ..x
+        # Универсальный поиск билдов (форматы: x.x.x, x.x.x.x, x.x.x-xxx, x.x.x.x-xxx)
         echo "{{ cf_builds_page.content }}" | \
-        grep -oE '[-]+\.[-]+\.[-]+x[-]+' | \
+        grep -oE 'href="[^"]*"' | \
+        sed 's/href="//g; s/"//g' | \
+        grep -E '^[0-9]+\.[0-9]+\.[0-9]+([\.-][0-9]+)?(x[0-9]+)?$' | \
         sort -V | \
         tail -1
       args:
@@ -59,7 +63,7 @@
 
     - name: "Сформировать полный путь CF"
       ansible.builtin.set_fact:
-        cf_build: "{{ cf_version_dir.stdout | trim }}{{ cf_build_result.stdout | trim }}"
+        cf_build: "{{ cf_version_dir.stdout | trim }}/{{ cf_build_result.stdout | trim }}"
       when: cf_version_dir.stdout != "" and cf_build_result.stdout != "" and cf_build_result.stdout | trim != ""
 
     - name: "Проверить, что билд CF найден"
@@ -89,10 +93,11 @@
     - name: "Извлечь последний билд GW"
       ansible.builtin.shell: |
         set -o pipefail
-        # Ищем каталоги с номерами билдов
+        # Универсальный поиск номеров билдов в HTML
         echo "{{ gw_page.content }}" | \
-        grep -oE '[-]+/' | \
-        grep -oE '^[-]+' | \
+        grep -oE 'href="[^"]*"' | \
+        sed 's/href="//g; s/"//g' | \
+        grep -E '^[0-9]+$' | \
         sort -n | \
         tail -1
       args:
