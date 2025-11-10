@@ -1,0 +1,35 @@
+<div class="section">
+    <h2>Выберите ВМ</h2>
+    <div class="vm-options">
+        <label class="vm-option">
+            <input type="radio" name="vm_selection" value="all" checked onchange="toggleVmSelection()">
+            <span>Все машины</span>
+        </label>
+        <label class="vm-option">
+            <input type="radio" name="vm_selection" value="selected" onchange="toggleVmSelection()">
+            <span>Выборочно</span>
+        </label>
+    </div>
+
+    <div id="vm-list-container" class="hidden">
+        <div class="select-all-vms">
+            <input type="checkbox" id="select-all-vms" onchange="toggleSelectAllVms()">
+            <label for="select-all-vms">Выбрать все</label>
+        </div>
+        <div class="vm-list" id="vm-list">
+            <!-- Список ВМ будет заполнен JavaScript -->
+        </div>
+    </div>
+
+    <div class="playbook-form">
+        <label for="inventory-select">Инвентарь для выполнения:</label>
+        <select id="inventory-select">
+            <option value="dev_inventory.ini">dev_inventory.ini (Разработка)</option>
+            <option value="prod_inventory.ini">prod_inventory.ini (Продакшен)</option>
+            <option value="custom">Пользовательский инвентарь</option>
+        </select>
+        <div id="custom-inventory" class="hidden">
+            <input type="text" id="custom-inventory-path" placeholder="Путь к инвентарному файлу">
+        </div>
+    </div>
+</div>

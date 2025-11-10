@@ -1,0 +1,23 @@
+<div id="monitoring-panel" class="monitoring-panel {% if not monitoring_active %}hidden{% endif %}">
+    <div class="monitoring-header">
+        <h2>Мониторинг выполнения в реальном времени</h2>
+        <div id="monitoring-status" class="monitoring-status status-running">
+            Выполняется...
+        </div>
+    </div>
+
+    <div class="monitoring-output" id="monitoring-output">
+        <!-- Вывод будет добавляться здесь в реальном времени -->
+    </div>
+
+    <div class="monitoring-controls">
+        <button class="control-button stop" onclick="stopMonitoring()">Остановить</button>
+        <button class="control-button clear" onclick="clearMonitoring()">Очистить</button>
+    </div>
+
+    <div class="task-progress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+</div>

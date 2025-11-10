@@ -1,0 +1,16 @@
+<div class="section">
+    <h2>Выбор версий</h2>
+    <div class="action-links">
+        <a href="{{ url_for('browse_builds', server='cf_server') }}">Файловый браузер CF Server</a>
+        <a href="{{ url_for('browse_builds', server='gw_server') }}">Файловый браузер GW Server</a>
+        <a href="{{ url_for('select_build', server='cf_server') }}">Быстрый выбор CF Server</a>
+        <a href="{{ url_for('select_build', server='gw_server') }}">Быстрый выбор GW Server</a>
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-all">
+            <input type="hidden" name="inventory_file" id="inventory-file-all">
+            <button type="submit" name="playbook" value="playbooks/downloader/product_download_installers.playbook.yml">
+                Автоматический выбор текущего билда
+            </button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,17 @@
+<div class="section">
+    <h2>Локальные билды</h2>
+    <div class="action-links">
+        <a href="{{ url_for('select_local_build', server='cf_server') }}">
+            Выбор локального билда CF Server
+            {% if local_builds.cf_server %}
+                <br><small>Доступно: {{ local_builds.cf_server|length }} версий</small>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('select_local_build', server='gw_server') }}">
+            Выбор локального билда GW Server
+            {% if local_builds.gw_server %}
+                <br><small>Доступно: {{ local_builds.gw_server|length }} версий</small>
+            {% endif %}
+        </a>
+    </div>
+</div>

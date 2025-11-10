@@ -1,0 +1,15 @@
+---
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/downloader/product_download_installers.playbook.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/copy_cf_package_to_host.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/deploy_cf_servers.playbook.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/configuration_connection_db.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/configuration_java.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/copy_gw_package_to_host.yml"
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/deploy_gw_servers.playbook.yml"

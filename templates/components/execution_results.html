@@ -1,0 +1,13 @@
+{% if output %}
+    <div class="log-section">
+        <h2>Результаты выполнения {{ playbook_name }}:</h2>
+        <pre class="log-pre">{{ output }}</pre>
+    </div>
+{% endif %}
+
+{% if errors %}
+    <div class="log-section">
+        <h2>Ошибки выполнения:</h2>
+        <pre class="log-pre error-pre">{{ errors }}</pre>
+    </div>
+{% endif %}

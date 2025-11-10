@@ -1,0 +1,19 @@
+<div class="section">
+    <h2>Загрузка билдов</h2>
+    <div class="action-links">
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-download">
+            <input type="hidden" name="inventory_file" id="inventory-file-download">
+            <button type="submit" name="playbook" value="playbooks/downloader/product_download_installers.playbook.yml">
+                Загрузить выбранные билды
+            </button>
+        </form>
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-download-auto">
+            <input type="hidden" name="inventory_file" id="inventory-file-download-auto">
+            <button type="submit" name="playbook" value="playbooks/downloader/product_download_installers.playbook.yml">
+                Автоматически определить и загрузить
+            </button>
+        </form>
+    </div>
+</div>

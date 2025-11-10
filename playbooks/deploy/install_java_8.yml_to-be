@@ -1,0 +1,64 @@
+---
+- name: Установка OpenJDK  на разных дистрибутивах
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: Установка Java для Astra (. и .)
+      when: ansible_facts['distribution'] == "Astra Linux"
+      block:
+        - name: Добавляем внешний репозиторий gosjava
+          ansible.builtin.copy:
+            dest: /etc/apt/sources.list.d/gosjava.list
+            content: |
+              deb http://packages.lab.net/gosjava/ alse main
+            mode: ''
+
+        - name: Импортируем GPG ключ
+          ansible.builtin.shell: |
+            set -o pipefail
+            gpg --keyserver keyserver.ubuntu.com --recv ADFBEFACDA &&
+            gpg --export --armor ADFBEFACDA | apt-key add -
+          args:
+            executable: /bin/bash
+          changed_when: true
+
+        - name: Обновляем apt
+          ansible.builtin.apt:
+            update_cache: true
+
+        - name: Устанавливаем gosjava-jre
+          ansible.builtin.apt:
+            name: gosjava-jre
+            state: present
+
+    - name: Установка Java для ALT
+      when: ansible_facts['distribution'] == "Altlinux"
+      ansible.builtin.apt:
+        name: java-..-openjdk-javadoc
+        state: present
+
+    - name: Установка Java для CentOS
+      when: ansible_facts['distribution'] == "CentOS"
+      ansible.builtin.dnf:
+        name:
+          - java-..-openjdk
+          - java-..-openjdk-devel
+        state: present
+
+    - name: Установка Java для RedOS
+      when: ansible_facts['distribution'] == "RedOS"
+      ansible.builtin.dnf:
+        name: java-..-openjdk.x_
+        state: present
+
+    - name: RedOS - Меняем альтернативу Java вручную
+      when: ansible_facts['distribution'] == "RED"
+      ansible.builtin.shell: |
+        update-alternatives --install /usr/bin/java java /usr/lib/jvm/jre-..-openjdk-....b-.el.x_/bin/java  &&
+        update-alternatives --set java /usr/lib/jvm/jre-..-openjdk-....b-.el.x_/bin/java
+      args:
+        executable: /bin/bash
+      changed_when: true

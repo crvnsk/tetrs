@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="layout">
+    <!-- ЛЕВАЯ КОЛОНКА -->
+    <div class="left-sidebar">
+        {% include "components/vm_selection.html" %}
+
+        <!-- Выбор билдов -->
+        <div class="section">
+            <h2>Выбор билдов</h2>
+            <div class="build-actions">
+                <!-- Главная кнопка -->
+                <form action="/run" method="post" onsubmit="return prepareForm(this)">
+                    <input type="hidden" name="target_vms" id="target-vms-download-auto">
+                    <input type="hidden" name="inventory_file" id="inventory-file-download-auto">
+                    <button type="submit" name="playbook" value="playbooks/downloader/product_download_installers.playbook.yml" class="main-action">
+                        Автоматически определить и загрузить
+                    </button>
+                </form>
+
+                <!-- Сворачиваемые опции -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible('build-options')">
+                        <span>Дополнительные опции</span>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div id="build-options" class="collapsible-content hidden">
+                        <div class="secondary-actions">
+                            <a href="{{ url_for('browse_builds', server='cf_server') }}" class="secondary-action">Файловый браузер CF Server</a>
+                            <a href="{{ url_for('browse_builds', server='gw_server') }}" class="secondary-action">Файловый браузер GW Server</a>
+                            <a href="{{ url_for('select_build', server='cf_server') }}" class="secondary-action">Быстрый выбор CF Server</a>
+                            <a href="{{ url_for('select_build', server='gw_server') }}" class="secondary-action">Быстрый выбор GW Server</a>
+
+                            <a href="{{ url_for('select_local_build', server='cf_server') }}" class="secondary-action">
+                                Локальные билды CF Server
+                                {% if local_builds.cf_server %}({{ local_builds.cf_server|length }}){% endif %}
+                            </a>
+                            <a href="{{ url_for('select_local_build', server='gw_server') }}" class="secondary-action">
+                                Локальные билды GW Server
+                                {% if local_builds.gw_server %}({{ local_builds.gw_server|length }}){% endif %}
+                            </a>
+
+                            <form action="/run" method="post" onsubmit="return prepareForm(this)">
+                                <input type="hidden" name="target_vms" id="target-vms-download">
+                                <input type="hidden" name="inventory_file" id="inventory-file-download">
+                                <button type="submit" name="playbook" value="playbooks/downloader/product_download_installers.playbook.yml" class="secondary-action">
+                                    Загрузить выбранные билды
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Установка -->
+        {% include "components/full_installation.html" %}
+        {% include "components/cf_server.html" %}
+        {% include "components/gw_server.html" %}
+    </div>
+
+    <!-- ПРАВАЯ КОЛОНКА -->
+    <div class="main-content">
+        {% include "components/selected_builds.html" %}
+        {% include "components/flash_messages.html" %}
+
+        <div class="section">
+            <h2>Мониторинг выполнения в реальном времени</h2>
+            {% include "components/monitoring_panel.html" %}
+        </div>
+
+        {% include "components/execution_results.html" %}
+    </div>
+</div>
+
+<!-- Режим отладки в подвале -->
+<div class="debug-footer">
+    Режим отладки:
+    {% if debug_mode %}
+        <span style="color: green;">ВКЛЮЧЕН</span>
+        <form action="/toggle_debug" method="post" style="display: inline;">
+            <button type="submit" name="debug" value="false" class="debug-toggle on">Выключить</button>
+        </form>
+    {% else %}
+        <span style="color: red;">ВЫКЛЮЧЕН</span>
+        <form action="/toggle_debug" method="post" style="display: inline;">
+            <button type="submit" name="debug" value="true" class="debug-toggle">Включить</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

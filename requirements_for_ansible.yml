@@ -1,0 +1,5 @@
+ for roles
+- src: kwoodson.yedit
+ for collections
+ - name: community.general
+   version: ..

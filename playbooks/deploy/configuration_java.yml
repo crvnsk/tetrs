@@ -1,0 +1,74 @@
+---
+- name: Обновляем JAVA_HOME в cyberfiles-tomcat.service
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Получаем корректный путь к Java
+      ansible.builtin.shell: |
+        set -o pipefail
+         Получаем реальный путь к java
+        java_path=$(readlink -f $(which java >/dev/null) || echo "")
+
+         Обрабатываем разные варианты путей и добавляем слеш
+        if [[ "$java_path" == "/jre/bin/java" ]]; then
+          path="${java_path%/jre/bin/java}/jre/"
+        elif [[ "$java_path" == "/bin/java" ]]; then
+          path="${java_path%/bin/java}/"
+        else
+          path="$java_path/"
+        fi
+
+         Удаляем лишние слеши и пробелы
+        echo "${path// /}" | sed 's|//|/|g'
+      register: java_home_result
+      changed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: Устанавливаем очищенный java_home
+      ansible.builtin.set_fact:
+        clean_java_home: "{{ java_home_result.stdout }}"
+
+    - name: Ищем unit-файл
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /lib/systemd/system/cyberfiles-tomcat.service
+        - /usr/lib/systemd/system/cyberfiles-tomcat.service
+      register: unit_files
+      changed_when: false
+
+    - name: Устанавливаем путь к файлу
+      ansible.builtin.set_fact:
+        unit_file_path: "{{ unit_files.results | selectattr('stat.exists') | map(attribute='stat.path') | first }}"
+
+    - name: Проверяем наличие unit-файла
+      ansible.builtin.fail:
+        msg: "Файл cyberfiles-tomcat.service не найден"
+      when: unit_file_path == ''
+
+    - name: Обновляем JAVA_HOME в файле
+      ansible.builtin.replace:
+        path: "{{ unit_file_path }}"
+        regexp: '^Environment="JAVA_HOME=\s(.?)\s"$'
+        replace: 'Environment="JAVA_HOME={{ clean_java_home }}"'
+        backup: true
+      register: config_updated
+      notify:
+        - Перезагрузить systemd
+        - Перезапустить сервис
+
+  handlers:
+    - name: Перезагрузить systemd
+      ansible.builtin.systemd:
+        daemon_reexec: true
+      listen: "systemd reload"
+
+    - name: Перезапустить сервис
+      ansible.builtin.systemd:
+        name: cyberfiles-tomcat
+        state: restarted
+      listen: "restart service"
+      when: unit_file_path != ''

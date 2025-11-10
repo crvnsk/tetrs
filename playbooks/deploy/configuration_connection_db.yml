@@ -1,0 +1,37 @@
+---
+- name: Заменяем DB_DATABASE, DB_USERNAME, DB_PASSWORD в конфигурационном файле
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Заменяем DB_DATABASE в конфигурационном файле
+      ansible.builtin.lineinfile:
+        path: "/opt/cyberprotect/cyberfiles/tomcat/webapps/access-server/WEB-INF/cyberfilessrv.cfg"
+        regexp: '^DB_DATABASE\s=.$'
+        line: "DB_DATABASE={{ db_database }}"
+        backup: true
+      when: db_database is defined
+
+    - name: Заменяем DB_USERNAME в конфигурационном файле
+      ansible.builtin.lineinfile:
+        path: "/opt/cyberprotect/cyberfiles/tomcat/webapps/access-server/WEB-INF/cyberfilessrv.cfg"
+        regexp: '^DB_USERNAME\s=.$'
+        line: "DB_USERNAME={{ db_username }}"
+        backup: true
+      when: db_username is defined
+
+    - name: Заменяем DB_PASSWORD в конфигурационном файле
+      ansible.builtin.lineinfile:
+        path: "/opt/cyberprotect/cyberfiles/tomcat/webapps/access-server/WEB-INF/cyberfilessrv.cfg"
+        regexp: '^DB_PASSWORD\s=.$'
+        line: "DB_PASSWORD={{ db_password }}"
+        backup: true
+      when: db_password is defined
+
+  handlers:
+    - name: Перезапустить сервис cyberfiles-tomcat
+      ansible.builtin.systemd:
+        name: cyberfiles-tomcat
+        state: restarted
+        enabled: true

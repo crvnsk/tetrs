@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-">
+    <title>Выбор билда для {{ server }}</title>
+</head>
+<body>
+    <h>Выберите билд для {{ server }}</h>
+
+    <form action="/select_build/{{ server }}" method="POST">
+        <select name="build">
+            {% for build in builds %}
+                <option value="{{ build }}">{{ build }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Выбрать</button>
+    </form>
+
+    <a href="/">Вернуться на главную</a>
+</body>
+</html>

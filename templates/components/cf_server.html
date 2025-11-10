@@ -1,0 +1,15 @@
+<div class="section">
+    <h2>Сервер КФ</h2>
+    <div class="action-links">
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-cf-uninstall">
+            <input type="hidden" name="inventory_file" id="inventory-file-cf-uninstall">
+            <button type="submit" name="playbook" value="playbooks/product_cf_server_uninstall_playbook.yml">Удаление сервера КФ</button>
+        </form>
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-cf-install">
+            <input type="hidden" name="inventory_file" id="inventory-file-cf-install">
+            <button type="submit" name="playbook" value="playbooks/product_cf_server_install.playbook.yml">Установка сервера КФ</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,64 @@
+---
+
+- name: " СКАЧИВАНИЕ CF ПАКЕТОВ"
+  ansible.builtin.debug:
+    msg: " Скачиваем пакеты CF Server для всех ОС..."
+
+- name: "Извлечь версию и билд из пути CF"
+  ansible.builtin.set_fact:
+    #Обрабатываем кастомные пути типа custom_CPS-/..x
+    cf_version_build: "{{ product.cf_server.linux.version_cf_server.split('/')[-] }}"
+    cf_custom_path: "{{ product.cf_server.linux.version_cf_server.split('/')[] if '/' in product.cf_server.linux.version_cf_server else '' }}"
+    cf_version: "{{ cf_version_build.split('x')[] }}"
+    cf_build_number: "{{ cf_version_build.split('x')[] }}"
+
+- name: "Подготовить ссылки для скачивания CF"
+  ansible.builtin.set_fact:
+    #Формируем правильные ссылки с учетом кастомных путей
+    cf_download_links: >-
+      [
+      {% for os in os_list %}
+        "{{ product.cf_server.linux.base_uri }}{% if cf_custom_path %}{{ cf_custom_path }}/{% endif %}{{ cf_version_build }}/{{ os_package_name_map.cf_server[os] }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+      ]
+
+- name: "Отладить список ссылок CF"
+  ansible.builtin.debug:
+    msg: "Ссылки для скачивания CF: {{ cf_download_links }}"
+  when: debug_mode | default(false)
+
+- name: "Скачать пакеты CF"
+  ansible.builtin.get_url:
+    url: "{{ item }}"
+    dest: "{{ components_to_download[component].work_folder }}/{{ item | basename }}"
+    url_username: "cyberprotect"
+    url_password: "cyberprotect"
+    mode: "0644"
+    validate_certs: false
+    timeout: 30
+  loop: "{{ cf_download_links }}"
+  register: cf_download
+  retries: "{{ retries_policy.count }}"
+  delay: "{{ retries_policy.delay }}"
+  ignore_errors: true
+
+- name: "Проверить результаты скачивания CF"
+  block:
+    - name: "Проверить наличие ошибок"
+      ansible.builtin.set_fact:
+        cf_failed_items: "{{ cf_download.results | selectattr('failed') | list }}"
+
+    - name: "Завершить при ошибках"
+      ansible.builtin.fail:
+        msg: >-
+          Ошибки скачивания CF:
+          {% for item in cf_failed_items %}
+          - URL: {{ item.url }}
+            Ошибка: {{ item.msg }}
+          {% endfor %}
+      when: cf_failed_items | length > 0
+
+    - name: "Подтвердить успешное скачивание"
+      ansible.builtin.debug:
+        msg: "Все пакеты CF успешно скачаны"
+      when: cf_failed_items | length == 0

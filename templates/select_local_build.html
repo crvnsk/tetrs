@@ -1,0 +1,46 @@
+<!-- templates/select_local_build.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-">
+    <title>Выбор локального билда - {{ server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h> Выбор локального билда - {{ server_name }}</h>
+            <a href="{{ url_for('index') }}" class="action-links">← Назад</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if builds %}
+            <div class="section">
+                <h>Доступные локальные билды:</h>
+                <div class="action-links">
+                    {% for build in builds %}
+                        <form action="{{ url_for('select_local_build', server=server) }}" method="post" style="margin: ;">
+                            <input type="hidden" name="build_version" value="{{ build.version }}">
+                            <button type="submit" style="text-align: left; padding: px;">
+                                <strong>Версия: {{ build.version }}</strong><br>
+                                <small>Файлов: {{ build.files|length }}</small>
+                            </button>
+                        </form>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="flash-info">
+                 Локальные билды не найдены в /tmp/downloaded_builds/{{ server }}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

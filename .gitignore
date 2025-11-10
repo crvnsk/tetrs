@@ -1,0 +1,4 @@
+.venv
+.vscode/settings.json
+group_vars/dbg.yml
+.log

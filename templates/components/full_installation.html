@@ -1,0 +1,15 @@
+<div class="section">
+    <h2>Полная установка</h2>
+    <div class="action-links">
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-full-uninstall">
+            <input type="hidden" name="inventory_file" id="inventory-file-full-uninstall">
+            <button type="submit" name="playbook" value="playbooks/product_full_uninstall.playbook.yml">Полное удаление Files (КФ + GW)</button>
+        </form>
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-full-install">
+            <input type="hidden" name="inventory_file" id="inventory-file-full-install">
+            <button type="submit" name="playbook" value="playbooks/product_full_install.playbook.yml">Полная установка Files (КФ + GW)</button>
+        </form>
+    </div>
+</div>

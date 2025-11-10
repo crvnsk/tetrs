@@ -1,0 +1,62 @@
+---
+
+- name: " СКАЧИВАНИЕ GW ПАКЕТОВ"
+  ansible.builtin.debug:
+    msg: " Скачиваем пакеты GW Server для всех ОС..."
+
+- name: "Извлечь версию для GW"
+  ansible.builtin.set_fact:
+    gw_version: ".."
+    gw_build_number: "{{ product.gw_server.linux.version_gw_server }}"
+
+- name: "Подготовить ссылки для скачивания GW"
+  ansible.builtin.set_fact:
+    #Формируем список ссылок для скачивания пакетов GW, подставляя билд и ОС.
+    gw_download_links: >-
+      [
+      {% for os in os_list %}
+        "{{ product.gw_server.linux.base_uri }}/{{ product.gw_server.linux.version_gw_server }}/{{ os_package_name_map.gw_server[os] }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+      ]
+
+- name: "Отладить список ссылок GW"
+  ansible.builtin.debug:
+    var: gw_download_links   #Отладочный вывод списка сформированных ссылок для скачивания.
+  when: debug_mode
+
+- name: "Скачать пакеты GW"
+  ansible.builtin.get_url:
+    url: "{{ item }}"   #Ссылка на файл для скачивания.
+    dest: "{{ components_to_download[component].work_folder }}/{{ item | basename }}"   #Путь, куда будет сохранен файл.
+    url_username: "cyberprotect"            #Имя пользователя для доступа к URL.
+    url_password: "cyberprotect"            #Пароль для доступа к URL.
+    mode: "0644"                            #Устанавливаем права доступа к файлам.
+    validate_certs: false                   #Отключаем проверку сертификатов.
+    timeout: 30                             #Устанавливаем таймаут на  секунд.
+  loop: "{{ gw_download_links }}"           #Проходим по всем ссылкам для скачивания.
+  register: gw_download                     #Регистрируем результаты скачивания.
+  retries: "{{ retries_policy.count }}"     #Количество попыток скачивания в случае неудачи.
+  delay: "{{ retries_policy.delay }}"       #Задержка между попытками.
+  ignore_errors: true                       #Игнорируем ошибки для продолжения выполнения.
+
+- name: "Проверить результаты скачивания GW"
+  block:
+    - name: "Проверить наличие ошибок"
+      ansible.builtin.set_fact:
+        #Собираем все неудачные попытки скачивания в отдельную переменную.
+        gw_failed_items: "{{ gw_download.results | selectattr('failed') | list }}"
+
+    - name: "Завершить при ошибках"
+      ansible.builtin.fail:
+        msg: >-
+          Ошибки скачивания GW:
+          {% for item in gw_failed_items %}
+          - URL: {{ item.url }}
+            Ошибка: {{ item.msg }}
+          {% endfor %}
+      when: gw_failed_items | length > 0   #Завершаем задачу с ошибкой, если есть неудачные скачивания.
+
+    - name: "Подтвердить успешное скачивание"
+      ansible.builtin.debug:
+        msg: "Все пакеты GW успешно скачаны"   #Подтверждаем успешное скачивание.
+      when: gw_failed_items | length == 0 and debug_mode  #Выполняем только если все файлы скачаны без ошибок.

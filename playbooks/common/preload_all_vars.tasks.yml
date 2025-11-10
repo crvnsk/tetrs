@@ -1,0 +1,14 @@
+---
+- name: Preload - check if group_vars/all.yml exists
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'PWD') }}/group_vars/all.yml"
+  register: all_yml_stat
+  delegate_to: localhost
+  become: false
+
+- name: Preload - force group_vars/all.yml reload (if it exists)
+  ansible.builtin.include_vars:
+    file: "{{ lookup('env', 'PWD') }}/group_vars/all.yml"
+  delegate_to: localhost
+  become: false
+  when: all_yml_stat.stat.exists

@@ -1,0 +1,46 @@
+<!-- templates/local_build_files.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-">
+    <title>Файлы билда - {{ server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h> Файлы билда - {{ server_name }}</h>
+            <a href="{{ url_for('index') }}" class="action-links">← Назад</a>
+        </div>
+
+        <div class="selected-builds">
+            <h>Выбранный билд: {{ build_version }}</h>
+        </div>
+
+        <div class="section">
+            <h> Список файлов для установки:</h>
+            <div class="vm-list">
+                {% for file in files %}
+                    <div class="vm-item">
+                        <div class="vm-info">
+                            <div class="vm-name">{{ file.name }}</div>
+                            <div class="vm-os">{{ file.size //  //  }} MB</div>
+                        </div>
+                        <span class="build-number">
+                            {% if file.name.endswith('.deb') %}DEB{% else %}RPM{% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="section">
+            <h> Действия:</h>
+            <div class="action-links">
+                <a href="{{ url_for('index') }}">Вернуться на главную</a>
+                <a href="{{ url_for('select_local_build', server=server) }}">Выбрать другой билд</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

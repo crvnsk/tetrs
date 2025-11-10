@@ -1,0 +1,25 @@
+{% if selected_builds %}
+<div class="selected-builds">
+    <h2>Текущие выбранные билды:</h2>
+
+    <div class="build-item">
+        <div class="server-info">
+            <span class="server-name">CF Server</span>
+            <span class="build-number">{{ selected_builds.cf_build }}</span>
+        </div>
+        <div class="build-path">
+            {{ selected_builds.cf_full_path }}
+        </div>
+    </div>
+
+    <div class="build-item">
+        <div class="server-info">
+            <span class="server-name">GW Server</span>
+            <span class="build-number">{{ selected_builds.gw_build }}</span>
+        </div>
+        <div class="build-path">
+            {{ selected_builds.gw_full_path }}
+        </div>
+    </div>
+</div>
+{% endif %}

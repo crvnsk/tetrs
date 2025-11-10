@@ -1,0 +1,168 @@
+---
+- name: "НАЧАЛО СКАЧИВАНИЯ КОМПОНЕНТОВ"
+  ansible.builtin.debug:
+    msg: "Начинаем скачивание компонентов..."
+
+- name: "Создать рабочие директории"
+  ansible.builtin.debug:
+    msg: "Создаем рабочие директории..."
+  when: debug_mode
+
+- name: "Создать рабочие директории"
+  ansible.builtin.file:
+    path: "{{ item.value.work_folder }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ components_to_download | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: "ПОДГОТОВКА ВЕРСИЙ ДЛЯ СКАЧИВАНИЯ"
+  ansible.builtin.debug:
+    msg: "Извлекаем версии и билды..."
+  when: debug_mode
+
+- name: "Извлечь версии для CF"
+  ansible.builtin.set_fact:
+    cf_version_build: "{{ product.cf_server.linux.version_cf_server.split('/')[-1] }}"
+
+- name: "Извлечь компоненты версии CF"
+  ansible.builtin.set_fact:
+    cf_version: "{{ cf_version_build.split('x')[0] }}"
+    cf_build_number: "{{ cf_version_build.split('-')[1] }}"
+
+- name: "Извлечь версии для GW"
+  ansible.builtin.set_fact:
+    gw_version: "9.4.0"
+    gw_build_number: "{{ product.gw_server.linux.version_gw_server }}"
+
+- name: "ИНФОРМАЦИЯ О ВЕРСИЯХ"
+  ansible.builtin.debug:
+    msg: |
+      ИЗВЛЕЧЕННЫЕ ВЕРСИИ:
+      CF: {{ cf_version }}-{{ cf_build_number }} (из {{ product.cf_server.linux.version_cf_server }})
+      GW: {{ gw_version }}.{{ gw_build_number }}
+  when: debug_mode
+
+- name: "ПРОВЕРКА ПЕРЕМЕННЫХ"
+  ansible.builtin.debug:
+    msg: "Проверяем наличие всех необходимых переменных..."
+  when: debug_mode
+
+- name: "Проверить наличие необходимых переменных"
+  block:
+    - name: "Проверить определенность переменных"
+      ansible.builtin.assert:
+        that:
+          - os_package_name_map is defined
+          - os_package_name_map.cf_server is defined
+          - os_package_name_map.gw_server is defined
+          - product.cf_server.linux.version_cf_server is defined
+          - product.gw_server.linux.version_gw_server is defined
+          - cf_build is defined and cf_build is not none
+          - gw_build is defined and gw_build is not none
+          - cf_version is defined
+          - cf_build_number is defined
+          - gw_version is defined
+          - gw_build_number is defined
+        fail_msg: >-
+          Не хватает требуемых переменных. Проверить:
+          - os_package_name_map: {{ 'OK' if os_package_name_map is defined else 'MISSING' }}
+          - os_package_name_map.cf_server: {{ 'OK' if os_package_name_map.cf_server is defined else 'MISSING' }}
+          - os_package_name_map.gw_server: {{ 'OK' if os_package_name_map.gw_server is defined else 'MISSING' }}
+          - Версия CF: {{ product.cf_server.linux.version_cf_server | default('НЕ ОПРЕДЕЛЕНА') }}
+          - Версия GW: {{ product.gw_server.linux.version_gw_server | default('НЕ ОПРЕДЕЛЕНА') }}
+          - Билд CF: {{ cf_build | default('НЕ ОПРЕДЕЛЕН') }}
+          - Билд GW: {{ gw_build | default('НЕ ОПРЕДЕЛЕН') }}
+          - CF версия: {{ cf_version | default('НЕ ОПРЕДЕЛЕНА') }}
+          - CF билд номер: {{ cf_build_number | default('НЕ ОПРЕДЕЛЕН') }}
+          - GW версия: {{ gw_version | default('НЕ ОПРЕДЕЛЕНА') }}
+          - GW билд номер: {{ gw_build_number | default('НЕ ОПРЕДЕЛЕН') }}
+
+    - name: "Получить список ОС из инвентаря"
+      ansible.builtin.set_fact:
+        os_list: "{{ groups['all'] | map('extract', hostvars, 'os_name') | select('defined') | list | unique }}"
+
+    - name: "Проверить структуру os_package_name_map"
+      ansible.builtin.assert:
+        that:
+          - os_package_name_map.cf_server is mapping
+          - os_package_name_map.gw_server is mapping
+        fail_msg: >-
+          Неправильная структура os_package_name_map. Должен быть словарем с ключами cf_server и gw_server.
+
+- name: "ПОДГОТОВКА ДАННЫХ ДЛЯ СКАЧИВАНИЯ"
+  ansible.builtin.debug:
+    msg: "Подготавливаем данные для скачивания..."
+  when: debug_mode
+
+- name: "Подготовить данные для скачивания"
+  block:
+    - name: "Создать список поддерживаемых ОС"
+      ansible.builtin.set_fact:
+        supported_os_cf: "{{ os_package_name_map.cf_server.keys() | list }}"
+        supported_os_gw: "{{ os_package_name_map.gw_server.keys() | list }}"
+
+    - name: "Проверить поддержку ОС для CF"
+      ansible.builtin.debug:
+        msg: "Проверяем поддержку ОС для CF Server..."
+      when: debug_mode
+
+    - name: "Проверить поддержку ОС для CF"
+      ansible.builtin.assert:
+        that:
+          - item in supported_os_cf
+        fail_msg: >-
+          ОС '{{ item }}' не поддерживается для CF Server. Поддерживаемые: {{ supported_os_cf }}
+      loop: "{{ os_list }}"
+
+    - name: "Проверить поддержку ОС для GW"
+      ansible.builtin.debug:
+        msg: "Проверяем поддержку ОС для GW Server..."
+      when: debug_mode
+
+    - name: "Проверить поддержку ОС для GW"
+      ansible.builtin.assert:
+        that:
+          - item in supported_os_gw
+        fail_msg: >-
+          ОС '{{ item }}' не поддерживается для GW Server. Поддерживаемые: {{ supported_os_gw }}
+      loop: "{{ os_list }}"
+
+- name: "НАЧАЛО СКАЧИВАНИЯ ПАКЕТОВ"
+  ansible.builtin.debug:
+    msg: "Начинаем скачивание пакетов..."
+
+- name: "Скачать пакеты"
+  block:
+    - name: "СКАЧИВАНИЕ CF SERVER"
+      ansible.builtin.debug:
+        msg: "Начинаем скачивание CF Server..."
+      when: debug_mode
+
+    - name: "Скачать пакеты CF Server"
+      ansible.builtin.include_tasks: tasks/download_cf.yml
+      vars:
+        component: "cf_server_linux"
+        base_uri: "{{ product.cf_server.linux.base_uri }}"
+        version: "{{ product.cf_server.linux.version_cf_server }}"
+        build: "{{ cf_build }}"
+        os_map: "{{ os_package_name_map.cf_server }}"
+
+    - name: "СКАЧИВАНИЕ GW SERVER"
+      ansible.builtin.debug:
+        msg: "Начинаем скачивание GW Server..."
+      when: debug_mode
+
+    - name: "Скачать пакеты GW Server"
+      ansible.builtin.include_tasks: tasks/download_gw.yml
+      vars:
+        component: "gw_server_linux"
+        base_uri: "{{ product.gw_server.linux.base_uri }}"
+        version: "{{ product.gw_server.linux.version_gw_server }}"
+        build: "{{ gw_build }}"
+        os_map: "{{ os_package_name_map.gw_server }}"
+
+- name: "ЗАВЕРШЕНИО СКАЧИВАНИЯ"
+  ansible.builtin.debug:
+    msg: "Скачивание компонентов завершено!"

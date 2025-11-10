@@ -1,0 +1,37 @@
+---
+ #playbooks/downloader/product_download_installers.playbook.yml
+- name: "Определение и загрузка компонентов CyberFiles"
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    #Определяем список компонентов, которые необходимо скачать, с указанием рабочих директорий для каждого.
+    components_to_download:
+      cf_server_linux:
+        name: "CF server for Linux"
+        work_folder: "{{ base_work_folder }}/cf_server"
+      gw_server_linux:
+        name: "GW server for Linux"
+        work_folder: "{{ base_work_folder }}/gw_server"
+    #Базовые URL для скачивания сборок CF и GW серверов.
+    cf_base_url: "{{ product.cf_server.linux.base_uri }}"
+    gw_base_url: "{{ product.gw_server.linux.base_uri }}"
+    #Указываем версии CF и GW серверов для загрузки.
+    cf_version: "{{ product.cf_server.linux.version_cf_server }}"
+    gw_version: "{{ product.gw_server.linux.version_gw_server }}"
+
+  pre_tasks:
+    #Проверяем и устанавливаем значения для переменных cf_build и gw_build, если они не были переданы.
+    - name: "Установить значения для cf_build и gw_build, если они не заданы"
+      ansible.builtin.set_fact:
+        cf_build: "{{ cf_build | default(None) }}"
+        gw_build: "{{ gw_build | default(None) }}"
+
+    #Включаем задачу для получения последних сборок CF и GW, если версии не были заданы.
+    - name: "Включить задачу для получения последних сборок"
+      ansible.builtin.include_tasks: ../common/set_build_versions.yml
+
+  tasks:
+    #Включаем задачу для скачивания компонентов с HTTP с использованием указанных URL.
+    - name: "Скачивание компонентов с HTTP"
+      ansible.builtin.include_tasks: download_from_http.tasks.yml

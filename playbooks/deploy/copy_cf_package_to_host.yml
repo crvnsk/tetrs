@@ -1,0 +1,67 @@
+---
+- name: Проверка наличия cf_server пакетов и копирование на удалённые хосты
+  hosts: localhost
+  gather_facts: false
+  vars:
+    work_folder: "{{ base_work_folder }}/cf_server"
+    destination: "/tmp/cf_server_installer"
+    retries_policy:
+      count: 
+      delay: 
+
+  tasks:
+    - name: Проверяем, есть ли файл под каждый хост
+      vars:
+        os_name: "{{ hostvars[item]['os_name'] }}"
+        cf_pattern: "{{ os_package_name_map['cf_server'][os_name] }}"
+      ansible.builtin.find:
+        paths: "{{ work_folder }}"
+        patterns: "{{ cf_pattern }}"
+      loop: "{{ groups['all'] }}"
+      loop_control:
+        label: "{{ item }}"
+      register: found_packages
+
+    - name: Показываем результат по каждому хосту
+      ansible.builtin.debug:
+        msg: >-
+          Хост {{ item.item }}:
+          {{ 'Найден файл: ' ~ item.files[].path if item.matched >  else 'Файл не найден: ' ~ item.patterns }}
+      loop: "{{ found_packages.results }}"
+
+    - name: Проверяем, что для удалённого хоста найден файл
+      ansible.builtin.assert:
+        that:
+          - found_packages.results | selectattr('item', 'equalto', item.item) | map(attribute='matched') | first == 
+        fail_msg: "Для хоста {{ item.item }} не найден необходимый файл."
+        success_msg: "Для хоста {{ item.item }} файл найден."
+      loop: "{{ found_packages.results }}"
+      when: item.matched > 
+
+    - name: Создаём директорию на удалённом хосте
+      ansible.builtin.file:
+        path: "{{ destination }}"
+        state: directory
+        mode: ""
+      delegate_to: "{{ item.item }}"
+      loop: "{{ found_packages.results }}"
+      when: item.matched > 
+
+    - name: Копируем файл на удалённый хост
+      ansible.builtin.copy:
+        src: "{{ item.files[].path }}"
+        dest: "{{ destination }}/{{ item.files[].path | basename }}"
+        mode: ""
+      register: copy_result
+      until: copy_result is success
+      retries: "{{ retries_policy.count }}"
+      delay: "{{ retries_policy.delay }}"
+      delegate_to: "{{ item.item }}"
+      loop: "{{ found_packages.results }}"
+      when: item.matched > 
+
+    - name: Выводим сообщение о завершении копирования
+      ansible.builtin.debug:
+        msg: "Файл успешно скопирован на хост {{ item.item }}"
+      loop: "{{ found_packages.results }}"
+      when: item.matched > 

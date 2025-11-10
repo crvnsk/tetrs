@@ -1,0 +1,15 @@
+<div class="section">
+    <h2>Сервер GW</h2>
+    <div class="action-links">
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-gw-uninstall">
+            <input type="hidden" name="inventory_file" id="inventory-file-gw-uninstall">
+            <button type="submit" name="playbook" value="playbooks/product_gw_server_uninstall_playbook.yml">Удаление сервера GW</button>
+        </form>
+        <form action="/run" method="post" class="playbook-form" onsubmit="return prepareForm(this)">
+            <input type="hidden" name="target_vms" id="target-vms-gw-install">
+            <input type="hidden" name="inventory_file" id="inventory-file-gw-install">
+            <button type="submit" name="playbook" value="playbooks/product_gw_install.playbook.yml">Установка сервера GW</button>
+        </form>
+    </div>
+</div>

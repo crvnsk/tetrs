@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Файловый браузер - {{ server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Файловый браузер - {{ server_name }}</h1>
+        </div>
+
+        <!-- Навигация -->
+        <div class="navigation">
+            <div class="nav-links">
+                <a href="/" class="btn btn-nav">На главную</a>
+                {% if parent_path is not none %}
+                    <a href="{{ url_for('browse_builds', server=server, path=parent_path) }}" class="btn btn-nav">На уровень выше</a>
+                {% endif %}
+                <a href="{{ url_for('browse_builds', server=server) }}" class="btn btn-nav">Корневая директория</a>
+            </div>
+        </div>
+
+        <!-- Текущий путь -->
+        <div class="current-path">
+            <strong>Текущий путь:</strong> {{ current_url }}
+        </div>
+
+        {% if error %}
+            <div class="error flash-error">
+                Ошибка: {{ error }}
+            </div>
+        {% endif %}
+
+        <!-- Список файлов и папок -->
+        <div class="file-list">
+            {% if items %}
+                {% for item in items %}
+                    <div class="file-item">
+                        <div class="file-icon">
+                            {% if item.type == 'directory' %}
+                                Папка
+                            {% else %}
+                                Файл
+                            {% endif %}
+                        </div>
+                        <div class="file-name">
+                            {{ item.name }}
+                            {% if item.type == 'directory' %}
+                                /
+                            {% endif %}
+                        </div>
+                        <div class="file-actions">
+                            {% if item.type == 'directory' %}
+                                <a href="{{ url_for('browse_builds', server=server, path=item.path) }}" class="btn">
+                                    Открыть
+                                </a>
+                            {% endif %}
+                            <form action="/select_from_browse" method="POST" style="display: inline;">
+                                <input type="hidden" name="server" value="{{ server }}">
+                                <input type="hidden" name="selected_path" value="{{ item.path }}">
+                                <button type="submit" class="btn btn-select">
+                                    Выбрать
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="file-item" style="text-align: center; color: #666; font-style: italic;">
+                    Директория пуста
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

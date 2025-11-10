@@ -1,0 +1,56 @@
+- name: Установка и проверка gw_server пакетов на хостах
+  hosts: all
+  become: true
+  vars:
+    destination: "/tmp/gw_server_installer"
+
+  tasks:
+    - name: Определяем тип пакета по ОС
+      ansible.builtin.set_fact:
+        install_pattern: "{{ '.deb' if os_name in ['Astra .', 'Astra .'] else '.rpm' }}"
+
+    - name: Находим установочные пакеты
+      ansible.builtin.find:
+        paths: "{{ destination }}"
+        patterns: "{{ install_pattern }}"
+      register: packages_to_install
+
+    - name: Устанавливаем пакеты через apt (Astra)
+      ansible.builtin.apt:
+        deb: "{{ item.path }}"
+        state: present
+      loop: "{{ packages_to_install.files }}"
+      when: os_name in ['Astra .', 'Astra .']
+
+    - name: Устанавливаем пакеты через dnf (CentOS и RedOS)
+      ansible.builtin.dnf:
+        name: "{{ item.path }}"
+        disable_gpg_check: true
+        state: present
+      loop: "{{ packages_to_install.files }}"
+      when: os_name in ['Centos ', 'Redos ']
+
+    - name: Устанавливаем RPM-пакет на ALT Linux 
+      ansible.builtin.command:
+        cmd: "rpm -Uvh --nodeps {{ item.path }}"
+      args:
+        creates: "/usr/bin/gwfiles"   #Проверка успешной установки
+      loop: "{{ packages_to_install.files }}"
+      when: os_name == 'Alt '
+      failed_when: false   Игнорирование ошибок
+      #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ВНИМАНИЕ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      noqa: command-instead-of-module
+
+    - name: Проверяем установку
+      ansible.builtin.stat:
+        path: "/opt/gateway/gwfiles/tomcat/bin/startup"
+      register: gw_installed
+      when: os_name == 'Alt '
+
+    - name: Перезапускаем службу (если установлено)
+      ansible.builtin.service:
+        name: gwfiles
+        state: restarted
+      when:
+        - os_name == 'Alt '
+        - gw_installed.stat.exists

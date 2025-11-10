@@ -1,0 +1,3 @@
+---
+#noqa: name[play]
+- import_playbook: "{{ playbook_dir }}/deploy/undeploy_gw_servers.playbook.yml"

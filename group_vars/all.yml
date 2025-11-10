@@ -1,0 +1,57 @@
+debug_mode: true
+base_work_folder: /tmp/downloaded_builds
+db_database: cyberfiles_production
+db_username: postgres
+db_password: qweQWE
+temp_cf_server_uri: ''
+temp_gw_server_uri: ''
+paths:
+  playbook:
+    base: '{{ lookup("env", "PWD") }}/playbooks'
+    common: '{{ lookup("env", "PWD") }}/playbooks/common'
+    deploy: '{{ lookup("env", "PWD") }}/playbooks/deploy'
+    downloader: '{{ lookup("env", "PWD") }}/playbooks/downloader'
+    web_api: '{{ lookup("env", "PWD") }}/playbooks/web_api'
+    vars: null
+    all: '{{ lookup("env", "PWD") }}/group_vars/all.yml'
+product:
+  gw_server:
+    linux:
+      base_uri: https://buildstorage.aip.ooo/builds/aa/gateway-server-linux/develop/
+      version_gw_server: '1216'
+      installers: null
+      security_context:
+        group: cyberprotect
+        owner: cyberprotect
+    log_level: debug
+  cf_server:
+    linux:
+      base_uri: https://buildstorage.aip.ooo/builds/aa/files-advanced-server-installer-linux/
+      version_cf_server: develop/9.4.0x4347
+      installers: null
+      security_context:
+        group: cyberprotect
+        owner: cyberprotect
+    log_level: debug
+retries_policy:
+  count: null
+  delay: null
+os_package_name_map:
+  cf_server:
+    Astra 1.7: cyberfiles-{{ cf_version }}-{{ cf_build_number }}.astra.deb
+    Astra 1.8: cyberfiles-{{ cf_version }}-{{ cf_build_number }}.astra-_.deb
+    Redos: cyberfiles-{{ cf_version }}-{{ cf_build_number }}.red.rpm
+    Centos: cyberfiles-{{ cf_version }}-{{ cf_build_number }}.cent.rpm
+    Alt: cyberfiles-{{ cf_version }}-{{ cf_build_number }}.alt.rpm
+  gw_server:
+    'Astra 1.7:': cyberfiles-gateway-{{ gw_version }}.{{ gw_build_number }}-astra.x_.deb
+    Astra 1.8:.: cyberfiles-gateway-{{ gw_version }}.{{ gw_build_number }}-astra.x_.deb
+    Redos: cyberfiles-gateway-{{ gw_version }}.{{ gw_build_number }}-redos.x_.rpm
+    Centos: cyberfiles-gateway-{{ gw_version }}.{{ gw_build_number }}-centos.x_.rpm
+    Alt: cyberfiles-gateway-{{ gw_version }}.{{ gw_build_number }}-alt.x_.rpm
+os_package_ext_map:
+  Astra 1.7 .: deb
+  Astra 1.8:.: deb
+  Redos: rpm
+  Centos: rpm
+  Alt: rpm

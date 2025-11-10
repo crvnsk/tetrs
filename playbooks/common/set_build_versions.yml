@@ -1,0 +1,35 @@
+---
+- name: "Установить значения для cf_build и gw_build, если они не заданы"
+  ansible.builtin.set_fact:
+    cf_build: ""
+    gw_build: ""
+  when: cf_build is not defined or gw_build is not defined
+
+- name: "Включить задачу для получения последних сборок"
+  ansible.builtin.include_tasks: tasks/get_latest_builds.yml
+  when: cf_build == "" or gw_build == ""
+
+- name: "Показать финальные пути для скачивания"
+  ansible.builtin.debug:
+    msg: |
+      ФИНАЛЬНЫЕ ПУТИ ДЛЯ СКАЧИВАНИЯ:
+      CF Server: {{ product.cf_server.linux.base_uri }}{{ product.cf_server.linux.version_cf_server }}/
+      GW Server: {{ product.gw_server.linux.base_uri }}{{ product.gw_server.linux.version_gw_server }}/
+
+- name: "Проверить, что версии установлены"
+  ansible.builtin.assert:
+    that:
+      - product.cf_server.linux.version_cf_server is defined and product.cf_server.linux.version_cf_server | length > 0
+      - product.gw_server.linux.version_gw_server is defined and product.gw_server.linux.version_gw_server | length > 0
+    fail_msg: |
+      Не удалось определить версии сборок:
+      - CF: {{ product.cf_server.linux.version_cf_server | default('не определен') }}
+      - GW: {{ product.gw_server.linux.version_gw_server | default('не определен') }}
+
+- name: Собрать строку с информацией о версиях
+  ansible.builtin.set_fact:
+    versions_message: "Используются версии: CF Server: {{ product.cf_server.linux.version_cf_server }} - GW Server: {{ product.gw_server.linux.version_gw_server }}"
+
+- name: Вывести используемые версии
+  ansible.builtin.debug:
+    msg: "{{ versions_message }}"

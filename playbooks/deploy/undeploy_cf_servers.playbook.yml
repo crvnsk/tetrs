@@ -1,0 +1,102 @@
+---
+
+- name: Удаление пакета cyberfiles
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Показать информацию об ОС
+      ansible.builtin.debug:
+        var: ansible_facts['distribution']
+
+    #Удаление для ALT Linux
+    - name: Принудительное удаление через rpm это рабочийй вариант
+      ansible.builtin.command:
+        argv:
+          - rpm
+          - -e
+          - --nodeps
+          - --noscripts
+          - cyberfiles
+      register: force_remove
+      when: ansible_facts['distribution'] == 'Altlinux'
+      ignore_errors: true
+      changed_when:
+        - force_remove is not failed
+        - force_remove.rc == 
+
+    #Удаление для CentOS
+    - name: Удалить cyberfiles через dnf (CentOS)
+      ansible.builtin.dnf:
+        name: cyberfiles
+        state: absent
+        autoremove: true
+      when: ansible_facts['distribution'] == 'CentOS'
+      register: centos_remove
+      failed_when: false
+      changed_when: centos_remove.changed
+
+    #Удаление для RED OS
+    - name: Удалить cyberfiles через dnf (RED OS)
+      ansible.builtin.dnf:
+        name: cyberfiles
+        state: absent
+        autoremove: true
+      when: ansible_facts['distribution'] == 'RED'
+      register: redos_remove
+      failed_when: false
+      changed_when: redos_remove.changed
+
+    #Удаление для Astra Linux
+    - name: Удалить cyberfiles через apt (Astra)
+      ansible.builtin.apt:
+        name: cyberfiles
+        state: absent
+        purge: true
+        autoremove: true
+      when: ansible_facts['distribution'] == 'Astra Linux'
+      register: astra_remove
+      failed_when: false
+      changed_when: astra_remove.changed
+
+    #Удаление unit-файлов
+    - name: Удалить unit-файлы cyberfiles
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /usr/lib/systemd/system/cyberfiles-repository.service
+        - /usr/lib/systemd/system/cyberfiles-tomcat.service
+        - /lib/systemd/system/cyberfiles-repository.service
+        - /lib/systemd/system/cyberfiles-tomcat.service
+      failed_when: false
+
+    #Удаление каталогов
+    - name: Удалить каталоги cyberfiles
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/cyberprotect/cyberfiles/repository
+        - /opt/cyberprotect/cyberfiles/tomcat
+        - /tmp/cf_server_installer
+      failed_when: false
+
+    #Обновление systemd
+    - name: Обновить systemd
+      block:
+        - name: Проверить systemctl
+          ansible.builtin.stat:
+            path: /bin/systemctl
+          register: systemctl_check
+
+        - name: Обновить демон systemd
+          ansible.builtin.systemd:
+            daemon_reload: true
+          when: systemctl_check.stat.exists
+
+        - name: Сбросить failed состояния
+          ansible.builtin.command: systemctl reset-failed
+          when: systemctl_check.stat.exists
+          changed_when: false
