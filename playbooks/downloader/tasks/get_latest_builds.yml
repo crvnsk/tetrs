@@ -16,25 +16,27 @@
       register: cf_page
       ignore_errors: yes
 
-    - name: "Найти последнюю версию CF"
+    - name: "Найти все каталоги CF"
       ansible.builtin.shell: |
-        set -o pipefail
-        # Универсальный поиск каталогов в HTML
-        echo "{{ cf_page.content }}" | \
-        grep -oE 'href="[^"]*/"' | \
-        sed 's/href="//g; s/"//g; s/\/$//' | \
-        grep -vE '^(\.\.|/builds/|/)$' | \
-        sort -V | \
-        tail -1
+        echo "{{ cf_page.content }}" | grep -oE '<a href="[^"]*">[^<]+</a>' | \
+        grep 'href="[^"]*/"' | \
+        sed 's/.*href="\([^"]*\)".*/\1/' | \
+        sed 's/\/$//' | \
+        grep -vE '^(\.\.|/|$)' | \
+        sort -V | tail -1
       args:
         executable: /bin/bash
       register: cf_version_dir
       changed_when: false
       when: cf_page.failed == false
 
+    - name: "Показать найденную версию CF"
+      ansible.builtin.debug:
+        msg: "Найдена версия CF: {{ cf_version_dir.stdout }}"
+
     - name: "Получить список билдов для версии CF"
       ansible.builtin.uri:
-        url: "{{ product.cf_server.linux.base_uri }}/{{ cf_version_dir.stdout | trim }}/"
+        url: "{{ product.cf_server.linux.base_uri }}/{{ cf_version_dir.stdout }}/"
         method: GET
         return_content: true
         validate_certs: false
@@ -42,29 +44,26 @@
         url_username: "cyberprotect"
         url_password: "cyberprotect"
       register: cf_builds_page
-      when: cf_version_dir.stdout != "" and cf_version_dir.stdout | trim != ""
+      when: cf_version_dir.stdout != ""
       ignore_errors: yes
 
-    - name: "Извлечь последний билд CF"
+    - name: "Найти последний билд CF"
       ansible.builtin.shell: |
-        set -o pipefail
-        # Универсальный поиск билдов (форматы: x.x.x, x.x.x.x, x.x.x-xxx, x.x.x.x-xxx)
-        echo "{{ cf_builds_page.content }}" | \
-        grep -oE 'href="[^"]*"' | \
-        sed 's/href="//g; s/"//g' | \
-        grep -E '^[0-9]+\.[0-9]+\.[0-9]+([\.-][0-9]+)?(x[0-9]+)?$' | \
-        sort -V | \
-        tail -1
+        echo "{{ cf_builds_page.content }}" | grep -oE '<a href="[^"]*">[^<]+</a>' | \
+        grep -vE '>(\.\.|/|metadata|Parent Directory)</a>' | \
+        sed 's/.*href="\([^"]*\)".*/\1/' | \
+        grep -E '^[0-9]' | \
+        sort -V | tail -1
       args:
         executable: /bin/bash
       register: cf_build_result
       changed_when: false
-      when: cf_builds_page.failed == false and cf_version_dir.stdout != "" and cf_version_dir.stdout | trim != ""
+      when: cf_builds_page.failed == false and cf_version_dir.stdout != ""
 
     - name: "Сформировать полный путь CF"
       ansible.builtin.set_fact:
-        cf_build: "{{ cf_version_dir.stdout | trim }}/{{ cf_build_result.stdout | trim }}"
-      when: cf_version_dir.stdout != "" and cf_build_result.stdout != "" and cf_build_result.stdout | trim != ""
+        cf_build: "{{ cf_version_dir.stdout }}/{{ cf_build_result.stdout }}"
+      when: cf_version_dir.stdout != "" and cf_build_result.stdout != ""
 
     - name: "Проверить, что билд CF найден"
       ansible.builtin.assert:
@@ -90,16 +89,14 @@
       register: gw_page
       ignore_errors: yes
 
-    - name: "Извлечь последний билд GW"
+    - name: "Найти последний билд GW"
       ansible.builtin.shell: |
-        set -o pipefail
-        # Универсальный поиск номеров билдов в HTML
-        echo "{{ gw_page.content }}" | \
-        grep -oE 'href="[^"]*"' | \
-        sed 's/href="//g; s/"//g' | \
+        echo "{{ gw_page.content }}" | grep -oE '<a href="[^"]*">[^<]+</a>' | \
+        grep 'href="[^"]*/"' | \
+        sed 's/.*href="\([^"]*\)".*/\1/' | \
+        sed 's/\/$//' | \
         grep -E '^[0-9]+$' | \
-        sort -n | \
-        tail -1
+        sort -n | tail -1
       args:
         executable: /bin/bash
       register: gw_build_result
@@ -108,7 +105,7 @@
 
     - name: "Установить номер сборки GW"
       ansible.builtin.set_fact:
-        gw_build: "{{ gw_build_result.stdout | trim }}"
+        gw_build: "{{ gw_build_result.stdout }}"
 
     - name: "Проверить, что номер сборки GW корректен"
       ansible.builtin.assert:
